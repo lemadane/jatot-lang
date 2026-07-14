@@ -355,6 +355,65 @@ The target guarantees are:
 
 The build uses a Java 21 toolchain and compiles with `--release 21`.
 
+## Using Jatot in Your Project
+
+Jatot is published to **GitHub Packages**. To use it as a dependency in a Gradle project (e.g. a Spring Boot project):
+
+### 1. Add credentials
+
+You need a GitHub Personal Access Token with at least `read:packages` scope.
+Export it as environment variables (or store it in `~/.gradle/gradle.properties`):
+
+```bash
+export GITHUB_ACTOR="your_github_username"
+export GITHUB_TOKEN="your_personal_access_token"
+```
+
+Or in `~/.gradle/gradle.properties`:
+```properties
+githubActor=your_github_username
+githubToken=your_personal_access_token
+```
+
+### 2. Configure `build.gradle`
+
+```groovy
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://maven.pkg.github.com/lemadane/jatot-lang")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("githubActor")
+            password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("githubToken")
+        }
+    }
+}
+
+dependencies {
+    implementation 'io.jatot:jatot:0.1.0-SNAPSHOT'
+}
+```
+
+### 3. Configure the Jatot compile task
+
+Add the Jatot transpiler task to your `build.gradle` so `.jatot` files are automatically compiled to Java during the build:
+
+```groovy
+tasks.register('compileJatot', JavaExec) {
+    classpath = configurations.runtimeClasspath
+    mainClass = 'io.jatot.cli.JatotCLI'
+    args 'compile',
+         'src/main/jatot',       // Source directory containing your .jatot files
+         'build/classes/java/main', // Output .class directory
+         'build/generated/jatot'    // Output generated .java directory
+    dependsOn configurations.runtimeClasspath
+}
+
+compileJava.dependsOn compileJatot
+```
+
+Place your `.jatot` source files in `src/main/jatot/` and they will be automatically transpiled and compiled on every `./gradlew build`.
+
 ## Build
 
 The standard Gradle Wrapper scripts and wrapper JAR have not yet been generated in this scaffold. With Gradle installed locally, run:
