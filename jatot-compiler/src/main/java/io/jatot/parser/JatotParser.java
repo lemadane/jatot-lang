@@ -16,6 +16,7 @@ public final class JatotParser {
     private final List<Diagnostic> diagnostics = new ArrayList<>();
     private final boolean isJava;
     private int current = 0;
+    private boolean isSpeculative = false;
 
     public JatotParser(SourceFile sourceFile, List<Token> tokens) {
         this.sourceFile = sourceFile;
@@ -112,13 +113,15 @@ public final class JatotParser {
     }
 
     private ParseError error(Token token, String message) {
-        diagnostics.add(new Diagnostic(
-                DiagnosticSeverity.ERROR,
-                "JATOT-P001",
-                message,
-                token.line(),
-                token.column()
-        ));
+        if (!isSpeculative) {
+            diagnostics.add(new Diagnostic(
+                    DiagnosticSeverity.ERROR,
+                    "JATOT-P001",
+                    message,
+                    token.line(),
+                    token.column()
+            ));
+        }
         return new ParseError();
     }
 
@@ -716,15 +719,18 @@ public final class JatotParser {
     private boolean isLocalVarDeclaration() {
         if (check(TokenType.FINAL) || check(TokenType.VAR)) return true;
         
-        // Backtracking lookahead to see if it starts with a TypeNode and is followed by identifier
         int saved = current;
+        boolean oldSpeculative = isSpeculative;
+        isSpeculative = true;
         try {
             parseType();
             boolean isDecl = check(TokenType.IDENTIFIER);
             current = saved;
+            isSpeculative = oldSpeculative;
             return isDecl;
         } catch (Exception e) {
             current = saved;
+            isSpeculative = oldSpeculative;
             return false;
         }
     }
