@@ -827,7 +827,14 @@ public final class JatotParser {
     private Expression parsePrefix(Token token) {
         return switch (token.type()) {
             case NUMBER -> new LiteralExpr(Double.parseDouble(token.lexeme()), token);
-            case STRING -> new LiteralExpr(token.lexeme().substring(1, token.lexeme().length() - 1), token);
+            case STRING -> {
+                if (token.lexeme().startsWith("\"\"\"")) {
+                    yield new LiteralExpr(token.lexeme().substring(3, token.lexeme().length() - 3), token);
+                } else {
+                    yield new LiteralExpr(token.lexeme().substring(1, token.lexeme().length() - 1), token);
+                }
+            }
+            case INTERPOLATED_STRING_START -> parseInterpolatedStringExpression(token);
             case TRUE -> new LiteralExpr(true, token);
             case FALSE -> new LiteralExpr(false, token);
             case NULL -> new LiteralExpr(null, token);
@@ -1411,5 +1418,60 @@ public final class JatotParser {
             throw error(templateToken, "Failed to parse expression inside sql template string: " + parser.diagnostics().get(0).message());
         }
         return expr;
+    }
+
+    private Expression parseInterpolatedStringExpression(Token startToken) {
+        List<InterpolatedStringPart> parts = new ArrayList<>();
+        while (!check(TokenType.INTERPOLATED_STRING_END) && !isAtEnd()) {
+            if (match(TokenType.INTERPOLATED_STRING_TEXT)) {
+                Token textToken = previous();
+                parts.add(new InterpolatedTextPart(unescapeString(textToken.lexeme())));
+            } else if (match(TokenType.INTERPOLATION_START)) {
+                if (check(TokenType.INTERPOLATION_END)) {
+                    error(peek(), "Interpolation expression cannot be empty.");
+                    advance(); // consume '}'
+                    parts.add(new InterpolatedTextPart(""));
+                } else {
+                    Expression expr = parseExpression(Precedence.NONE);
+                    consume(TokenType.INTERPOLATION_END, "Expected '}' at the end of interpolation expression.");
+                    parts.add(new InterpolatedExpressionPart(expr));
+                }
+            } else {
+                Token invalid = advance();
+                error(invalid, "Unexpected token in interpolated string: " + invalid.lexeme());
+            }
+        }
+        consume(TokenType.INTERPOLATED_STRING_END, "Unterminated interpolated string.");
+        return new InterpolatedStringExpression(parts, startToken);
+    }
+
+    private static String unescapeString(String value) {
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < value.length()) {
+            char c = value.charAt(i);
+            if (c == '\\' && i + 1 < value.length()) {
+                char next = value.charAt(i + 1);
+                switch (next) {
+                    case 't' -> sb.append('\t');
+                    case 'b' -> sb.append('\b');
+                    case 'n' -> sb.append('\n');
+                    case 'r' -> sb.append('\r');
+                    case 'f' -> sb.append('\f');
+                    case '\'' -> sb.append('\'');
+                    case '"' -> sb.append('"');
+                    case '\\' -> sb.append('\\');
+                    default -> {
+                        sb.append(c);
+                        sb.append(next);
+                    }
+                }
+                i += 2;
+            } else {
+                sb.append(c);
+                i++;
+            }
+        }
+        return sb.toString();
     }
 }

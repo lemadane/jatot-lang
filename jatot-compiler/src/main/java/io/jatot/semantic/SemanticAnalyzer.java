@@ -756,6 +756,17 @@ public final class SemanticAnalyzer implements ImportResolver {
             }
         } else if (expr instanceof NamedArgExpr named) {
             return checkExpression(named.expression());
+        } else if (expr instanceof InterpolatedStringExpression interp) {
+            for (InterpolatedStringPart part : interp.parts()) {
+                if (part instanceof InterpolatedExpressionPart iep) {
+                    ResolvedType type = checkExpression(iep.expression());
+                    if (type != null && type.info() != null && type.info().fullName().equals("void")) {
+                        error(interp.token(), "Interpolation expression cannot have type void.");
+                    }
+                }
+            }
+            TypeInfo stringInfo = symbolTable.getType("java.lang.String");
+            return new ResolvedType(stringInfo, true, List.of(), 0);
         }
 
         TypeInfo obj = symbolTable.getType("java.lang.Object");

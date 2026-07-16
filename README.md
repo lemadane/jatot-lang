@@ -499,8 +499,45 @@ final users = await usersFuture;
 
 When a query blocks on database I/O, the JVM automatically unmounts the virtual thread, enabling high-performance concurrent database operations with standard, simple synchronous code.
 
+### Interpolated Strings
 
+Jatot includes native support for type-safe, evaluated string interpolation expressions using the `$"` syntax. The same delimiter seamlessly supports both single-line and multiline string expressions.
 
+#### Four Important Cases
+
+1. **Normal Java String** (no interpolation):
+   ```java
+   String ordinary = "Hello, {name}";
+   // Evaluates literally to: Hello, {name}
+   ```
+2. **Normal Java Text Block** (no interpolation):
+   ```java
+   String ordinaryBlock = """
+           Hello, {name}
+           """;
+   // Evaluates literally to: Hello, {name}
+   ```
+3. **Jatot Interpolated String**:
+   ```jatot
+   String interpolated = $"Hello, {name}";
+   // Evaluates at runtime to: Hello, Lemuel
+   ```
+4. **Jatot Multiline Interpolated String**:
+   ```jatot
+   String interpolatedBlock = $"Hello, {name}
+   Hope you are fine.";
+   // Evaluates to a single multi-line string containing a newline
+   ```
+
+#### Syntax Rules and Behavior
+* **Activation**: Prefixing a string with `$` (using `$"`) enables runtime interpolation.
+* **Single & Multiline Support**: The exact same `$"..."` syntax is used for both single-line and multiline strings. Triple quotes are not required for multiline interpolated strings.
+* **Compatibility**: Normal Java strings (`"..."`) and Java text blocks (`"""..."""`) do not interpolate. Braces inside them are treated as literal characters.
+* **Brace Interpolation**: An interpolation expression is marked with `{` and ends with the matching `}`.
+* **Literal Braces**: Use doubled braces `{{` to produce a literal `{`, and `}}` to produce a literal `}` inside an interpolated string.
+* **Evaluation Order**: Expressions inside an interpolated string are evaluated strictly from left to right exactly once.
+* **Null Handling**: If an evaluated expression resolves to `null`, it renders as the string `"null"` (equivalent to `String.valueOf(value)`). No `NullPointerException` is thrown from the string mapping itself.
+* **Type Behavior**: The entire interpolated string expression resolves to type `java.lang.String`. Void-returning expressions are rejected at compile-time.
 
 ### Native Server-Side HTML Components
 

@@ -3,13 +3,8 @@ package io.jatot.compiler;
 import io.jatot.lexer.*;
 import io.jatot.source.SourceFile;
 import org.junit.jupiter.api.Test;
-
-import java.io.*;
-import java.lang.reflect.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.*;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**

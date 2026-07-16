@@ -583,6 +583,36 @@ public final class JavaEmitter {
             }
             
             return "((" + castType + ") io.jatot.sql.Sql.execute(" + sqlString + ", " + paramList + ", " + classLiteral + "))";
+        } else if (expr instanceof InterpolatedStringExpression interp) {
+            if (interp.parts().isEmpty()) {
+                return "\"\"";
+            }
+            StringBuilder concat = new StringBuilder();
+            boolean isFirst = true;
+            boolean startWithEmpty = false;
+            
+            if (interp.parts().get(0) instanceof InterpolatedExpressionPart) {
+                startWithEmpty = true;
+            }
+            
+            if (startWithEmpty) {
+                concat.append("\"\"");
+                isFirst = false;
+            }
+            
+            for (InterpolatedStringPart part : interp.parts()) {
+                if (!isFirst) {
+                    concat.append(" + ");
+                }
+                isFirst = false;
+                
+                if (part instanceof InterpolatedTextPart itp) {
+                    concat.append("\"").append(escapeJavaString(itp.text())).append("\"");
+                } else if (part instanceof InterpolatedExpressionPart iep) {
+                    concat.append(emitExpression(iep.expression()));
+                }
+            }
+            return "(" + concat.toString() + ")";
         } else if (expr instanceof BinaryExpr bin) {
             if (bin.operator().type() == io.jatot.lexer.TokenType.ASSIGN) {
                 return emitExpression(bin.left()) + " = " + emitExpression(bin.right());

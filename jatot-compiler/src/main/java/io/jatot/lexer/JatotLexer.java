@@ -94,8 +94,23 @@ public final class JatotLexer {
             case '\n' -> {
                 // Position has already been advanced.
             }
-            case '"' -> scanString();
+            case '"' -> {
+                if (peek() == '"' && peekNext() == '"') {
+                    advance();
+                    advance();
+                    scanTextBlock();
+                } else {
+                    scanString();
+                }
+            }
             case '`' -> scanTemplateString();
+            case '$' -> {
+                if (match('"')) {
+                    scanInterpolatedString();
+                } else {
+                    scanIdentifier();
+                }
+            }
             default -> {
                 if (isDigit(character)) {
                     scanNumber();
@@ -160,6 +175,28 @@ public final class JatotLexer {
         error("JATOT-L005", "Unterminated string literal.");
     }
 
+    private void scanTextBlock() {
+        boolean escaped = false;
+        while (!isAtEnd()) {
+            char character = advance();
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (character == '\\') {
+                escaped = true;
+                continue;
+            }
+            if (character == '"' && peek() == '"' && peekNext() == '"') {
+                advance();
+                advance();
+                add(TokenType.STRING);
+                return;
+            }
+        }
+        error("JATOT-L010", "Unterminated text block literal.");
+    }
+
     private void scanTemplateString() {
         boolean escaped = false;
         while (!isAtEnd()) {
@@ -178,6 +215,109 @@ public final class JatotLexer {
             }
         }
         error("JATOT-L006", "Unterminated template string literal.");
+    }
+
+    private void scanInterpolatedString() {
+        add(TokenType.INTERPOLATED_STRING_START);
+
+        int textStart = current;
+        int textLine = line;
+        int textColumn = column;
+
+        while (!isAtEnd()) {
+            if (peek() == '{' && peekNext() == '{') {
+                advance();
+                advance();
+                continue;
+            }
+            if (peek() == '}' && peekNext() == '}') {
+                advance();
+                advance();
+                continue;
+            }
+            if (peek() == '}') {
+                error("JATOT-L007", "Unexpected '}' in interpolated string. Use '}}' for a literal closing brace.");
+                advance();
+                continue;
+            }
+            if (peek() == '{') {
+                // Emit current text if any
+                if (current > textStart) {
+                    addInterpolatedStringText(textStart, current, textLine, textColumn);
+                }
+
+                // Consume '{' and emit INTERPOLATION_START
+                start = current;
+                tokenLine = line;
+                tokenColumn = column;
+                advance();
+                add(TokenType.INTERPOLATION_START);
+
+                // Tokenize expression with brace tracking
+                int braceDepth = 1;
+                while (!isAtEnd() && braceDepth > 0) {
+                    start = current;
+                    tokenLine = line;
+                    tokenColumn = column;
+
+                    char nextChar = peek();
+                    if (nextChar == '{') {
+                        braceDepth++;
+                    } else if (nextChar == '}') {
+                        braceDepth--;
+                        if (braceDepth == 0) {
+                            break;
+                        }
+                    }
+
+                    scanToken();
+                }
+
+                if (braceDepth > 0) {
+                    error("JATOT-L008", "Unterminated interpolation expression. Expected '}'.");
+                    return;
+                }
+
+                // Consume '}' and emit INTERPOLATION_END
+                start = current;
+                tokenLine = line;
+                tokenColumn = column;
+                advance();
+                add(TokenType.INTERPOLATION_END);
+
+                // Reset text indices
+                textStart = current;
+                textLine = line;
+                textColumn = column;
+                continue;
+            }
+
+            char c = advance();
+            if (c == '\\') {
+                if (!isAtEnd()) {
+                    advance();
+                }
+            } else if (c == '"') {
+                // Emit current text if any
+                if (current - 1 > textStart) {
+                    addInterpolatedStringText(textStart, current - 1, textLine, textColumn);
+                }
+                // Emit INTERPOLATED_STRING_END
+                start = current - 1;
+                tokenLine = line;
+                tokenColumn = column - 1;
+                add(TokenType.INTERPOLATED_STRING_END);
+                return;
+            }
+        }
+
+        error("JATOT-L009", "Unterminated interpolated string.");
+    }
+
+    private void addInterpolatedStringText(int startIdx, int endIdx, int l, int col) {
+        String raw = source.substring(startIdx, endIdx);
+        String processed = raw.replace("{{", "{").replace("}}", "}");
+        tokens.add(new Token(TokenType.INTERPOLATED_STRING_TEXT, processed, l, col, startIdx, endIdx));
     }
 
     private void scanNumber() {

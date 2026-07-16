@@ -1,8 +1,6 @@
 package io.jatot.compiler;
 
 import static org.junit.jupiter.api.Assertions.*;
-import io.jatot.diagnostic.Diagnostic;
-import io.jatot.diagnostic.DiagnosticSeverity;
 import io.jatot.lexer.JatotLexer;
 import io.jatot.lexer.LexResult;
 import io.jatot.lexer.TokenType;

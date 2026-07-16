@@ -1,7 +1,6 @@
 package io.jatot.compiler;
 
 import static org.junit.jupiter.api.Assertions.*;
-import io.jatot.diagnostic.Diagnostic;
 import io.jatot.diagnostic.DiagnosticSeverity;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -427,5 +426,137 @@ class JatotEndToEndTest {
         CompilationResult result = compile(srcDir, binDir, genDir);
         assertFalse(result.successful());
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.message().contains("SQL Syntax Error") || d.message().contains("Expected select expressions")));
+    }
+
+    @Test
+    void testStringInterpolation() throws Exception {
+        String code = 
+            "package test;\n" +
+            "import java.util.List;\n" +
+            "import java.util.ArrayList;\n" +
+            "public class InterpMain {\n" +
+            "    public static void main(String[] args) {\n" +
+            "        // 1. Basic variables and primitive values\n" +
+            "        final name = \"Lemuel\";\n" +
+            "        final age = 42;\n" +
+            "        final result = $\"Hello, {name}! You are {age} years old.\";\n" +
+            "        if (!result.equals(\"Hello, Lemuel! You are 42 years old.\")) {\n" +
+            "            throw new RuntimeException(\"Fail basic: \" + result);\n" +
+            "        }\n" +
+            "\n" +
+            "        // 2. Arithmetic, ternary, and nested expressions\n" +
+            "        final active = true;\n" +
+            "        final math = $\"Total: {10 * 5}, Status: {active ? \"Active\" : \"Inactive\"}\";\n" +
+            "        if (!math.equals(\"Total: 50, Status: Active\")) {\n" +
+            "            throw new RuntimeException(\"Fail expressions: \" + math);\n" +
+            "        }\n" +
+            "\n" +
+            "        // 3. Double brace literal braces\n" +
+            "        final braces = $\"{{name: \\\"{name}\\\", age: {age}}}\";\n" +
+            "        final quote = Character.toString(34);\n" +
+            "        final expectedBraces = \"{name: \" + quote + \"Lemuel\" + quote + \", age: 42}\";\n" +
+            "        if (!braces.equals(expectedBraces)) {\n" +
+            "            throw new RuntimeException(\"Fail braces: \" + braces);\n" +
+            "        }\n" +
+            "\n" +
+            "        // 4. Multiline string interpolation\n" +
+            "        final multiline = $\"First line: {name}\n" +
+            "Second line\n" +
+            "Third line: {age}\";\n" +
+            "        final expectedMultiline = $\"First line: Lemuel\n" +
+            "Second line\n" +
+            "Third line: 42\";\n" +
+            "        if (!multiline.equals(expectedMultiline)) {\n" +
+            "            throw new RuntimeException(\"Fail multiline: \\\"\" + multiline + \"\\\"\");\n" +
+            "        }\n" +
+            "\n" +
+            "        // 5. Null handling\n" +
+            "        final Object nullVal = null;\n" +
+            "        final nullTest = $\"Value: {nullVal}\";\n" +
+            "        if (!nullTest.equals(\"Value: null\")) {\n" +
+            "            throw new RuntimeException(\"Fail null handling: \" + nullTest);\n" +
+            "        }\n" +
+            "\n" +
+            "        // 6. Evaluation order check\n" +
+            "        final List<Integer> order = new ArrayList<Integer>();\n" +
+            "        final orderTest = $\"{recordCall(order, 1)}-{recordCall(order, 2)}-{recordCall(order, 3)}\";\n" +
+            "        if (!orderTest.equals(\"10-20-30\")) {\n" +
+            "            throw new RuntimeException(\"Fail order value: \" + orderTest);\n" +
+            "        }\n" +
+            "        if (order.size() != 3 || order.get(0) != 1 || order.get(1) != 2 || order.get(2) != 3) {\n" +
+            "            throw new RuntimeException(\"Fail evaluation order side effects: \" + order);\n" +
+            "        }\n" +
+            "\n" +
+            "        // 7. Normal Java compat checks\n" +
+            "        final String $value = \"Hello\";\n" +
+            "        final String user$name = \"Lemuel\";\n" +
+            "        final ordinary = \"Hello, {name}\";\n" +
+            "        if (!ordinary.equals(\"Hello, {name}\")) {\n" +
+            "            throw new RuntimeException(\"Fail normal string braces: \" + ordinary);\n" +
+            "        }\n" +
+            "\n" +
+            "        final textBlock = \"\"\"\n" +
+            "            Hello, {name}\n" +
+            "            \"\"\";\n" +
+            "        if (!textBlock.contains(\"{name}\")) {\n" +
+            "            throw new RuntimeException(\"Fail normal textblock braces: \" + textBlock);\n" +
+            "        }\n" +
+            "    }\n" +
+            "\n" +
+            "    private static int recordCall(List<Integer> list, int id) {\n" +
+            "        list.add(id);\n" +
+            "        return id * 10;\n" +
+            "    }\n" +
+            "}\n";
+
+        Path tempDir = createTempDir();
+        Path srcDir = tempDir.resolve("src");
+        Path binDir = tempDir.resolve("bin");
+        Path genDir = tempDir.resolve("gen");
+        Files.createDirectories(srcDir);
+
+        Files.writeString(srcDir.resolve("InterpMain.jatot"), code, StandardCharsets.UTF_8);
+
+        CompilationResult result = compile(srcDir, binDir, genDir);
+        assertTrue(result.successful(), "Compilation failed: " + result.diagnostics());
+        runClass(binDir, "test.InterpMain");
+    }
+
+    @Test
+    void testStringInterpolationValidationErrors() throws Exception {
+        // Empty brace check
+        String code1 = 
+            "package test;\n" +
+            "public class ErrorMain1 {\n" +
+            "    public static void main(String[] args) {\n" +
+            "        final bad = $\"Hello, {}\";\n" +
+            "    }\n" +
+            "}\n";
+
+        Path tempDir1 = createTempDir();
+        Path srcDir1 = tempDir1.resolve("src");
+        Files.createDirectories(srcDir1);
+        Files.writeString(srcDir1.resolve("ErrorMain1.jatot"), code1, StandardCharsets.UTF_8);
+        CompilationResult res1 = compile(srcDir1, tempDir1.resolve("bin"), tempDir1.resolve("gen"));
+        assertFalse(res1.successful());
+        assertTrue(res1.diagnostics().stream().anyMatch(d -> d.message().contains("Interpolation expression cannot be empty.")));
+
+        // Void expression check
+        String code2 = 
+            "package test;\n" +
+            "public class ErrorMain2 {\n" +
+            "    public static void main(String[] args) {\n" +
+            "        final bad = $\"Result: {print()}\";\n" +
+            "    }\n" +
+            "    private static void print() {}\n" +
+            "}\n";
+
+        Path tempDir2 = createTempDir();
+        Path srcDir2 = tempDir2.resolve("src");
+        Files.createDirectories(srcDir2);
+        Files.writeString(srcDir2.resolve("ErrorMain2.jatot"), code2, StandardCharsets.UTF_8);
+        CompilationResult res2 = compile(srcDir2, tempDir2.resolve("bin"), tempDir2.resolve("gen"));
+        assertFalse(res2.successful());
+        assertTrue(res2.diagnostics().stream().anyMatch(d -> d.message().contains("Interpolation expression cannot have type void.")));
     }
 }

@@ -285,6 +285,16 @@ public final class JatotLowerer implements ImportResolver {
                 loweredInterpolations.add(lowerExpression(param));
             }
             return new SqlExpr(sql.query(), loweredInterpolations, sql.resultType(), sql.token());
+        } else if (expr instanceof InterpolatedStringExpression interp) {
+            List<InterpolatedStringPart> loweredParts = new ArrayList<>();
+            for (InterpolatedStringPart part : interp.parts()) {
+                if (part instanceof InterpolatedTextPart itp) {
+                    loweredParts.add(itp);
+                } else if (part instanceof InterpolatedExpressionPart iep) {
+                    loweredParts.add(new InterpolatedExpressionPart(lowerExpression(iep.expression())));
+                }
+            }
+            return new InterpolatedStringExpression(loweredParts, interp.token());
         } else if (expr instanceof BinaryExpr bin) {
             if (bin.operator().type() == TokenType.NULL_COALESCING) {
                 // Lower left and right
@@ -732,6 +742,8 @@ public final class JatotLowerer implements ImportResolver {
             }
         } else if (expr instanceof NamedArgExpr named) {
             return getTypeOf(named.expression());
+        } else if (expr instanceof InterpolatedStringExpression) {
+            return new ResolvedType(symbolTable.getType("java.lang.String"), true, List.of(), 0);
         }
 
         return new ResolvedType(symbolTable.getType("java.lang.Object"), false, List.of(), 0);
