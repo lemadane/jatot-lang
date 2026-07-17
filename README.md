@@ -12,42 +12,6 @@ The name comes from **TOTAL** seen in a mirror: the mirrored `L` resembles a `J`
 
 > **Jatot is Java reflected, refined, and completed.**
 
-## Project status
-
-Jatot is currently in the **compiler-foundation stage**.
-
-The repository already contains:
-
-- a Java 21 Gradle project
-- a **lexer** for Jatot keywords and operators
-- a **parser** producing a full abstract syntax tree
-- **semantic analysis** with symbol resolution and type checking
-- a **lowering** pass that transforms Jatot AST constructs to Java-compatible forms
-- a **Java source emitter** for transpilation output
-- source-file and diagnostic abstractions
-- a CLI with `check`, `tokens`, and `checkJatot` commands
-- a Virtual Thread runtime prototype for `async`/`await` lowering
-- JUnit 5 tests (including end-to-end compiler tests)
-- an example `.jatot` source file
-
-The compiler pipeline is functional from lexing through Java emission. Work continues on expanding language feature coverage and hardening the transpilation output.
-
-## Design goal
-
-A Java developer should be able to read Jatot immediately.
-
-Jatot keeps Java as the baseline:
-
-- classes, interfaces, records, enums, and annotations
-- packages and imports
-- constructors and method overloading
-- generics and Java collections
-- checked and unchecked exceptions
-- Java libraries and frameworks
-- JVM bytecode and the standard Java runtime
-
-Jatot adds focused syntax while preserving Java-shaped code.
-
 ## A first look
 
 ```java
@@ -90,6 +54,44 @@ public class DashboardService {
     }
 }
 ```
+
+## Project status
+
+Jatot is currently in the **compiler-foundation stage**.
+
+The repository already contains:
+
+- a Java 21 Gradle project
+- a **lexer** for Jatot keywords and operators
+- a **parser** producing a full abstract syntax tree
+- **semantic analysis** with symbol resolution and type checking
+- a **lowering** pass that transforms Jatot AST constructs to Java-compatible forms
+- a **Java source emitter** for transpilation output
+- source-file and diagnostic abstractions
+- a CLI with `check`, `tokens`, and `checkJatot` commands
+- a Virtual Thread runtime prototype for `async`/`await` lowering
+- JUnit 5 tests (including end-to-end compiler tests)
+- an example `.jatot` source file
+
+The compiler pipeline is functional from lexing through Java emission. Work continues on expanding language feature coverage and hardening the transpilation output.
+
+## Design goal
+
+A Java developer should be able to read Jatot immediately.
+
+Jatot keeps Java as the baseline:
+
+- classes, interfaces, records, enums, and annotations
+- packages and imports
+- constructors and method overloading
+- generics and Java collections
+- checked and unchecked exceptions
+- Java libraries and frameworks
+- JVM bytecode and the standard Java runtime
+
+Jatot adds focused syntax while preserving Java-shaped code.
+
+
 
 ## Confirmed language features
 
@@ -1047,171 +1049,6 @@ jatot <check|tokens> <source.jatot>
 
 At this stage, `check` performs lexical validation only.
 
-## Project structure
-
-```text
-jatot/
-├── build.gradle
-├── settings.gradle
-├── gradle.properties
-├── jatot-compiler/
-│   ├── src/main/java/io/jatot/
-│   │   ├── ast/          Abstract syntax tree model
-│   │   ├── cli/          Command-line interface
-│   │   ├── compiler/     Compiler pipeline entry point
-│   │   ├── diagnostic/   Errors and warnings
-│   │   ├── emitter/      Java source code emitter
-│   │   ├── lexer/        Tokenization
-│   │   ├── lowering/     AST lowering (Jatot → Java-compatible forms)
-│   │   ├── parser/       Recursive-descent parser
-│   │   ├── semantic/     Semantic analysis and type checking
-│   │   ├── source/       Source-file abstraction
-│   │   └── symbol/       Symbol table and scope management
-│   └── src/test/java/io/jatot/
-├── jatot-html-runtime/
-│   └── src/main/java/io/jatot/html/  Core server-side HTML rendering APIs
-├── jatot-html-spring/
-│   └── src/main/java/io/jatot/html/spring/  Spring WebMVC integration
-└── jatot-html-demo/
-    ├── src/main/jatot/  Jatot components (User, UserCard, UserPage)
-    └── src/test/java/io/jatot/html/demo/  End-to-end integration and Spring Boot tests
-```
-
-## Compiler pipeline
-
-```text
-.jatot source
-    ↓
-SourceFile          — source-file abstraction
-    ↓
-JatotLexer          — tokenization
-    ↓
-Token stream        — keywords, operators, literals, identifiers
-    ↓
-JatotParser         — recursive-descent parsing
-    ↓
-AST                 — abstract syntax tree
-    ↓
-SemanticAnalyzer    — symbol resolution, type checking, diagnostics
-    ↓
-JatotLowerer        — AST lowering (Jatot constructs → Java-compatible forms)
-    ↓
-JavaEmitter         — Java source emission
-    ↓
-javac               — standard Java compilation
-    ↓
-JVM bytecode
-```
-
-## Implementation roadmap
-
-Features will be added incrementally in this order:
-
-1. **Java-compatible compiler foundation**
-   - packages and imports
-   - classes, fields, constructors, and methods
-   - statements and expressions
-   - parser and AST
-   - symbol tables and diagnostics
-   - Java source emission
-
-2. **`final` and `var` local variables**
-   - inferred local types
-   - immutable and mutable bindings
-   - assignment validation
-
-3. **Immutable parameters**
-   - parameter symbol tracking
-   - reassignment diagnostics
-
-4. **Mandatory `this.`**
-   - member resolution
-   - instance and static member distinction
-
-5. **Non-null types with `!`**
-   - nullable-by-default references
-   - assignment and return checking
-   - method-boundary checks
-
-6. **Null coalescing with `??`**
-   - lazy right-hand evaluation
-   - nullable-to-non-null type refinement
-
-7. **Optional chaining with `?.`**
-   - single evaluation of receivers
-   - nullable result propagation
-
-8. **`if` expressions and `yield`**
-   - branch result analysis
-   - compatible yielded types
-
-9. **`try` expressions**
-   - yielded results from `try` and `catch`
-   - `finally` handling
-
-10. **`for` expressions**
-    - enhanced and traditional forms
-    - collection result construction
-    - `break` and `continue`
-
-11. **`while` and `do-while` expressions**
-    - collection-producing loop reuse
-
-12. **Class extensions**
-    - extension discovery and imports
-    - overload resolution
-    - conflict handling
-    - static Java helper emission
-
-13. **`async` and `await` using Virtual Threads**
-    - future typing
-    - call-site concurrency
-    - exception propagation
-    - cancellation
-    - structured task lifetime
-    - ignored-future diagnostics
-
-14. **Gradle integration**
-    - `src/main/jatot`
-    - `src/test/jatot`
-    - generated Java source directories
-    - incremental compilation support
-
-15. **Native `@Logging` Support** (Completed)
-    - `jatot.logging` Standard Library
-    - `jatot.logging.spring.boot` Starter
-
-16. **Native JSON Support (`jatot.json`)** (Completed)
-    - Zero-dependency parser & mapper
-    - Record-oriented type-safe parsing
-    - Constructor validation automation
-
-17. **Native JSON Literals** (Completed)
-    - Inline JSON template strings (`json<Target>"""..."""`)
-    - Type inference and variable interpolation
-    - Zero-overhead static allocations
-
-18. **Native HTML Templates & SSR** (Completed)
-    - Custom markup tags parsed into standard AST structures
-    - Automatic compilation down to dynamic `HtmlWriter` lambda outputs
-    - Static HTML block pre-rendering and `@Prerender` optimization
-
-19. **File-Based Routing & SSG** (Completed)
-    - Dynamic Spring-based package scans matching directory paths
-    - Automatic Layout hierarchies (`Layout.jatot`) wrapping children
-    - Data-decoupled routes using `Loader` class parameters
-
-20. **Identity-Based Symbols** (Completed)
-    - Collision-free metadata keys via `Symbol` and `SymbolMap`
-    - Scoped thread-safe global registry with type checks
-
-21. **Native SQL Templating** (Completed)
-    - Parameterized dynamic database queries (`sql<T>"""..."""`)
-    - Compile-time syntax checking and target Record mappings
-
-22. **Generator Functions** (Completed)
-    - Streamable lazy sequences using the `generator` method modifier
-    - Integration with `JatotGenerator` callback execution
 
 ## First implementation milestone
 
