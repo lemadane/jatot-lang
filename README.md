@@ -684,6 +684,104 @@ implementation 'io.jatot:jatot-logging-spring-boot-starter:1.0.0'
 It maps Spring Boot profiles and active environments so that `jatot.logging` levels automatically align with your `application.yml` properties. In environments without Spring Boot, it seamlessly falls back to reading `jatot-logging.properties`.
 
 
+### 25. Slugs (`jatot.web`)
+
+Java does not provide a built-in slug type or standard slugification utility. Developers often have to use third-party libraries or build custom logic combining `Normalizer`, regular expressions, and locales. Jatot fills this gap by providing a standardized, immutable value type: `jatot.web.Slug`.
+
+#### Basic Example
+
+```jatot
+import jatot.web.Slug;
+
+Slug slug = Slug.from("Aircon Cleaning Services");
+System.out.println(slug);
+```
+
+Output:
+```text
+aircon-cleaning-services
+```
+
+#### Generation vs. Parsing
+
+Jatot makes an important distinction between generating a slug from arbitrary input text versus parsing/validating a value expected to already be a canonical slug.
+
+1. **Generation (`Slug.from`)**:
+   - Converts arbitrary user input into a canonical slug format (e.g. lowercasing, resolving diacritics, replacing invalid character runs with separators, collapsing and trimming separators, and enforcing length bounds).
+   ```jatot
+   Slug slug = Slug.from("Café Déjà Vu"); // cafe-deja-vu
+   ```
+2. **Parsing (`Slug.parse`)**:
+   - Validates that the input is *already* in a canonical, normalized slug format. It does not perform any corrections, lowercasing, or transformations, and will throw an `IllegalArgumentException` for non-canonical input.
+   ```jatot
+   Slug slug = Slug.parse("cafe-deja-vu"); // Ok
+   Slug.parse("Café Déjà Vu"); // Throws IllegalArgumentException: Invalid slug
+   ```
+3. **Checking (`Slug.isValid`)**:
+   - Validates that a string is a valid canonical slug without throwing an exception, returning a `boolean`.
+   ```jatot
+   boolean valid = Slug.isValid("cafe-deja-vu"); // true
+   boolean invalid = Slug.isValid("Café Déjà Vu"); // false
+   ```
+
+#### Core Characteristics & Rules
+
+- **Immutability**: `Slug` is a `final` class with an immutable internal state. Modifying operations like `append(...)` return a new `Slug` instance, leaving the original unchanged.
+- **Locale Neutrality**: Converting characters to lowercase strictly uses `Locale.ROOT` to ensure deterministic slugs across servers with different machine locales.
+- **Value Semantics**: Unlike `Symbol`, slugs are compared by value. Two slugs containing the same canonical value are equal and share the same hash code.
+- **No Database Uniqueness**: Slugs represent a value format and do not guarantee uniqueness on a database. Handlers, repositories, or services must enforce tenant or globally unique suffixes if required.
+- **No URL Encoding**: Slugs are path-safe segment identifiers, not URL encoders. Special URL escaping/building should be handled separately.
+
+#### Character Policies
+
+The standard library supports two policies via `SlugCharacterPolicy`:
+
+1. **ASCII (Default)**:
+   - Restricts characters strictly to `a-z`, `0-9`, and the configured separator.
+   - Diacritics and combining marks are stripped where possible after Unicode `NFD` decomposition.
+   ```jatot
+   Slug slug = Slug.from("Café Déjà Vu"); // cafe-deja-vu
+   ```
+
+2. **UNICODE**:
+   - Preserves Unicode letter and digit symbols while transforming spaces and punctuation to separators.
+   ```jatot
+   Slug slug = Slug.from(
+       "東京 レストラン",
+       SlugOptions.builder()
+           .characterPolicy(SlugCharacterPolicy.UNICODE)
+           .build()
+   ); // 東京-レストラン
+   ```
+
+#### Domain Model & API Integrations
+
+Using `Slug` inside records or domain entities provides strict type safety over raw strings:
+
+```jatot
+record Service(
+    UUID id,
+    String name,
+    Slug slug
+) {}
+```
+
+#### Append Example
+
+You can combine slugs cleanly:
+
+```jatot
+Slug serviceSlug = Slug.from("Home Services")
+        .append("Aircon Cleaning");
+System.out.println(serviceSlug); // home-services-aircon-cleaning
+```
+
+You can test this implementation via the included demo:
+```bash
+# Compile and run the Slug Demo
+./gradlew :jatot-compiler:runSlugDemo
+```
+
 
 ## Java interoperability
 
@@ -1193,103 +1291,6 @@ Jatot adds focused syntax while preserving Java-shaped code.
 
 > **Jatot should remove Java's accidental complexity without hiding the programmer's intention.**
 
-## Slugs (`jatot.web`)
-
-Java does not provide a built-in slug type or standard slugification utility. Developers often have to use third-party libraries or build custom logic combining `Normalizer`, regular expressions, and locales. Jatot fills this gap by providing a standardized, immutable value type: `jatot.web.Slug`.
-
-### Basic Example
-
-```jatot
-import jatot.web.Slug;
-
-Slug slug = Slug.from("Aircon Cleaning Services");
-System.out.println(slug);
-```
-
-Output:
-```text
-aircon-cleaning-services
-```
-
-### Generation vs. Parsing
-
-Jatot makes an important distinction between generating a slug from arbitrary input text versus parsing/validating a value expected to already be a canonical slug.
-
-1. **Generation (`Slug.from`)**:
-   - Converts arbitrary user input into a canonical slug format (e.g. lowercasing, resolving diacritics, replacing invalid character runs with separators, collapsing and trimming separators, and enforcing length bounds).
-   ```jatot
-   Slug slug = Slug.from("Café Déjà Vu"); // cafe-deja-vu
-   ```
-2. **Parsing (`Slug.parse`)**:
-   - Validates that the input is *already* in a canonical, normalized slug format. It does not perform any corrections, lowercasing, or transformations, and will throw an `IllegalArgumentException` for non-canonical input.
-   ```jatot
-   Slug slug = Slug.parse("cafe-deja-vu"); // Ok
-   Slug.parse("Café Déjà Vu"); // Throws IllegalArgumentException: Invalid slug
-   ```
-3. **Checking (`Slug.isValid`)**:
-   - Validates that a string is a valid canonical slug without throwing an exception, returning a `boolean`.
-   ```jatot
-   boolean valid = Slug.isValid("cafe-deja-vu"); // true
-   boolean invalid = Slug.isValid("Café Déjà Vu"); // false
-   ```
-
-### Core Characteristics & Rules
-
-- **Immutability**: `Slug` is a `final` class with an immutable internal state. Modifying operations like `append(...)` return a new `Slug` instance, leaving the original unchanged.
-- **Locale Neutrality**: Converting characters to lowercase strictly uses `Locale.ROOT` to ensure deterministic slugs across servers with different machine locales.
-- **Value Semantics**: Unlike `Symbol`, slugs are compared by value. Two slugs containing the same canonical value are equal and share the same hash code.
-- **No Database Uniqueness**: Slugs represent a value format and do not guarantee uniqueness on a database. Handlers, repositories, or services must enforce tenant or globally unique suffixes if required.
-- **No URL Encoding**: Slugs are path-safe segment identifiers, not URL encoders. Special URL escaping/building should be handled separately.
-
-### Character Policies
-
-The standard library supports two policies via `SlugCharacterPolicy`:
-
-1. **ASCII (Default)**:
-   - Restricts characters strictly to `a-z`, `0-9`, and the configured separator.
-   - Diacritics and combining marks are stripped where possible after Unicode `NFD` decomposition.
-   ```jatot
-   Slug slug = Slug.from("Café Déjà Vu"); // cafe-deja-vu
-   ```
-
-2. **UNICODE**:
-   - Preserves Unicode letter and digit symbols while transforming spaces and punctuation to separators.
-   ```jatot
-   Slug slug = Slug.from(
-       "東京 レストラン",
-       SlugOptions.builder()
-           .characterPolicy(SlugCharacterPolicy.UNICODE)
-           .build()
-   ); // 東京-レストラン
-   ```
-
-### Domain Model & API Integrations
-
-Using `Slug` inside records or domain entities provides strict type safety over raw strings:
-
-```jatot
-record Service(
-    UUID id,
-    String name,
-    Slug slug
-) {}
-```
-
-### Append Example
-
-You can combine slugs cleanly:
-
-```jatot
-Slug serviceSlug = Slug.from("Home Services")
-        .append("Aircon Cleaning");
-System.out.println(serviceSlug); // home-services-aircon-cleaning
-```
-
-You can test this implementation via the included demo:
-```bash
-# Compile and run the Slug Demo
-./gradlew :jatot-compiler:runSlugDemo
-```
 
 
 
