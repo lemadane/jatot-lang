@@ -449,9 +449,18 @@ public final class SemanticAnalyzer implements ImportResolver {
         }
     }
 
-    // --- Expression Analysis (Returns ResolvedType) ---
+    public final Map<Expression, ResolvedType> resolvedTypes = new java.util.IdentityHashMap<>();
 
     private ResolvedType checkExpression(Expression expr) {
+        if (expr == null) return null;
+        ResolvedType type = checkExpressionInternal(expr);
+        if (type != null) {
+            resolvedTypes.put(expr, type);
+        }
+        return type;
+    }
+
+    private ResolvedType checkExpressionInternal(Expression expr) {
         if (expr instanceof LiteralExpr lit) {
             if (lit.value() == null) {
                 return new ResolvedType(symbolTable.getType("null"), false, List.of(), 0);

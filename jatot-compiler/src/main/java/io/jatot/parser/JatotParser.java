@@ -17,6 +17,11 @@ public final class JatotParser {
     private final boolean isJava;
     private int current = 0;
     private boolean isSpeculative = false;
+    private boolean isErrorTolerant = false;
+
+    public void setErrorTolerant(boolean tolerant) {
+        this.isErrorTolerant = tolerant;
+    }
 
     public JatotParser(SourceFile sourceFile, List<Token> tokens) {
         this.sourceFile = sourceFile;
@@ -105,6 +110,19 @@ public final class JatotParser {
 
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
+        if (isErrorTolerant) {
+            Token currentToken = peek();
+            if (!isSpeculative) {
+                diagnostics.add(new Diagnostic(
+                        DiagnosticSeverity.ERROR,
+                        "JATOT-P001",
+                        message,
+                        currentToken.line(),
+                        currentToken.column()
+                ));
+            }
+            return new Token(type, "", currentToken.line(), currentToken.column(), currentToken.startOffset(), currentToken.startOffset());
+        }
         throw error(peek(), message);
     }
 

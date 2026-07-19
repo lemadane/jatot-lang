@@ -10,3 +10,13 @@ include 'jatot-html-demo-sql'
 project(':jatot-html-demo-sql').projectDir = new File(settingsDir, 'jatot-compiler/src/e2e/jatot-html-demo-sql')
 
 include 'jatot-spring-boot-starter'
+
+include 'tools:jatot-language-tools'
+project(':tools:jatot-language-tools').projectDir = new File(settingsDir, 'tools/jatot-language-tools')
+
+include 'tools:jatot-language-server'
+project(':tools:jatot-language-server').projectDir = new File(settingsDir, 'tools/jatot-language-server')
+
+include 'tools:jatot-intellij'
+project(':tools:jatot-intellij').projectDir = new File(settingsDir, 'tools/jatot-intellij')
+

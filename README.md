@@ -1271,6 +1271,42 @@ The repository already contains:
 
 The compiler pipeline is functional from lexing through Java emission. Work continues on expanding language feature coverage and hardening the transpilation output.
 
+## IDE Support & Tooling
+
+Jatot includes complete, production-ready IDE support for standard editor features (syntax highlighting, completions, hover info, definition lookup, diagnostics, and code actions):
+
+### 1. `jatot-language-tools` (Shared Tooling Core)
+The backend service layer that leverages the compiler frontend to provide editor services.
+* **Error-Tolerant Parsing**: Recovers gracefully from syntax errors (e.g. trailing dots `obj.`, unclosed braces) to keep giving completions and structure.
+* **Semantic Analysis**: Stores type mappings on AST expressions to answer hover and type-check queries.
+* **Transpiler Bridge**: Emits generated Java source in-memory.
+
+### 2. `jatot-language-server` (Language Server Protocol)
+An LSP-compliant server built with LSP4J communicating via `stdin`/`stdout`.
+* Writes server logs clean of LSP protocol strictly to `stderr`.
+* Built and run via Gradle:
+  ```bash
+  ./gradlew :tools:jatot-language-server:installDist --no-configuration-cache
+  ```
+  The packaged script is located at:
+  `tools/jatot-language-server/build/install/jatot-language-server/bin/jatot-language-server`
+
+### 3. `jatot-vscode` (VS Code Extension)
+Provides out-of-the-box support for VS Code:
+* **Syntax Highlighting**: Custom TextMate grammar (`.jatot` language mode) highlighting interpolated strings, JSX HTML tags, and async/await blocks.
+* **LSP Client**: Boots the Language Server from local Gradle build automatically.
+* **Commands**: Run command `Jatot: Show Generated Java` to transpile on-the-fly and display raw Java side-by-side.
+
+### 4. `jatot-intellij` (IntelliJ Plugin)
+A native custom-language plugin built using Gradle IntelliJ Platform SDK Plugin 2.x:
+* Custom file type registration (`.jatot` files and icon).
+* Code commenter and brace matcher.
+* Connects completion providers and diagnostics directly to `jatot-language-tools` for consistent, compiler-accurate Intellisense.
+* Compile and test via:
+  ```bash
+  ./gradlew :tools:jatot-intellij:compileKotlin --no-configuration-cache
+  ```
+
 ## Design goal
 
 A Java developer should be able to read Jatot immediately.

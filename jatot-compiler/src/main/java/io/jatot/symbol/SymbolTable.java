@@ -10,9 +10,15 @@ import java.util.*;
 public final class SymbolTable {
     private final Map<String, TypeInfo> typeCache = new HashMap<>();
     private final Map<String, List<TypeInfo>> packageTypes = new HashMap<>();
+    private final ClassLoader classLoader;
     private final List<ExtensionDecl> extensions = new ArrayList<>();
 
     public SymbolTable() {
+        this(null);
+    }
+
+    public SymbolTable(ClassLoader classLoader) {
+        this.classLoader = classLoader;
         prepopulatePrimitives();
     }
 
@@ -71,9 +77,10 @@ public final class SymbolTable {
             return typeCache.get(fullName);
         }
 
+        ClassLoader loader = classLoader != null ? classLoader : ClassLoader.getSystemClassLoader();
         // Try load via reflection
         try {
-            Class<?> clazz = Class.forName(fullName);
+            Class<?> clazz = Class.forName(fullName, true, loader);
             TypeInfo info = createReflectedTypeInfo(clazz);
             typeCache.put(fullName, info);
             return info;
@@ -87,7 +94,7 @@ public final class SymbolTable {
                 if (outerInfo != null) {
                     // Try looking for nested class
                     try {
-                        Class<?> clazz = Class.forName(possibleOuter + "$" + innerName);
+                        Class<?> clazz = Class.forName(possibleOuter + "$" + innerName, true, loader);
                         TypeInfo info = createReflectedTypeInfo(clazz);
                         typeCache.put(fullName, info);
                         return info;
