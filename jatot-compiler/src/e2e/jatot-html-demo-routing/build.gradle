@@ -14,8 +14,7 @@ configurations {
 
 dependencies {
     compilerClasspath project(':jatot-compiler')
-    implementation project(':jatot-html-runtime')
-    implementation project(':jatot-html-spring')
+    implementation project(':jatot-spring-boot-starter')
     
     implementation('org.springframework.boot:spring-boot-starter-web:3.3.1') {
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
@@ -77,8 +76,7 @@ tasks.register('compileJatot', JavaExec) {
     outputs.dir('build/generated/sources/jatot/main')
     
     dependsOn project(':jatot-compiler').tasks.named('classes')
-    dependsOn project(':jatot-html-runtime').tasks.named('classes')
-    dependsOn project(':jatot-html-spring').tasks.named('classes')
+    dependsOn project(':jatot-spring-boot-starter').tasks.named('classes')
 }
 
 tasks.named('compileJava') {
@@ -103,8 +101,7 @@ tasks.register('compileTestJatot', JavaExec) {
     outputs.dir('build/generated/sources/jatot/test')
     
     dependsOn project(':jatot-compiler').tasks.named('classes')
-    dependsOn project(':jatot-html-runtime').tasks.named('classes')
-    dependsOn project(':jatot-html-spring').tasks.named('classes')
+    dependsOn project(':jatot-spring-boot-starter').tasks.named('classes')
 }
 
 tasks.named('compileTestJava') {

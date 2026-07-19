@@ -18,7 +18,7 @@ class LoggingGenerationTest {
     void testLoggingAnnotationGeneratesLoggerField() throws Exception {
         Path sourceFile = tempDir.resolve("CustomerService.jatot");
         Files.writeString(sourceFile, """
-            import jatot.logging.Logging;
+            import io.jatot.logging.Logging;
             
             @Logging
             public class CustomerService {
@@ -40,14 +40,14 @@ class LoggingGenerationTest {
             true // saveJava
         );
 
-        // result.successful() will be false because jatot.logging is not in the test classpath for javac.
+        // result.successful() will be false because io.jatot.logging is not in the test classpath for javac.
         // We only care that the Java source was generated correctly.
 
         Path generatedJava = outDir.resolve("CustomerService.java");
         assertTrue(Files.exists(generatedJava), "Generated Java file should exist");
 
         String javaContent = Files.readString(generatedJava);
-        assertTrue(javaContent.contains("private static final jatot.logging.Logger log = jatot.logging.LogManager.getLogger(CustomerService.class);"), 
+        assertTrue(javaContent.contains("private static final io.jatot.logging.Logger log = io.jatot.logging.LogManager.getLogger(CustomerService.class);"), 
                    "Should generate logger field");
     }
 }

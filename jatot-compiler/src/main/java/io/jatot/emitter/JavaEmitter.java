@@ -567,7 +567,7 @@ public final class JavaEmitter {
             }
             sb.append("\"");
             String classLiteral = emitType(json.resultType()) + ".class";
-            return "jatot.json.Json.parse(" + sb.toString() + ", " + classLiteral + ")";
+            return "io.jatot.json.Json.parse(" + sb.toString() + ", " + classLiteral + ")";
         } else if (expr instanceof SqlExpr sql) {
             String sqlString = "\"" + escapeJavaString(sql.query()) + "\"";
             String paramList;

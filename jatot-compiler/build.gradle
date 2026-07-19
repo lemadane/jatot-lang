@@ -17,8 +17,6 @@ application {
 }
 
 dependencies {
-    api project(':jatot-html-runtime')
-    api project(':jatot-json')
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -160,7 +158,7 @@ tasks.register('runSymbolDemo', JavaExec) {
 tasks.register('compileLoggingDemo', JavaExec) {
     group = 'build'
     description = 'Compiles the standalone Logging demo application to Java.'
-    classpath = sourceSets.main.runtimeClasspath + project(':jatot-logging').sourceSets.main.runtimeClasspath
+    classpath = sourceSets.main.runtimeClasspath
     mainClass = 'io.jatot.cli.JatotCli'
     
     def classDir = new File(buildDirDir, 'classes/java/demo')
@@ -168,15 +166,15 @@ tasks.register('compileLoggingDemo', JavaExec) {
         classDir.mkdirs()
     }
     
-    args 'compile', "${rootDirDir}/jatot-compiler/src/e2e/examples/LoggingDemo.jatot", '-d', "${buildDirDir}/classes/java/demo", '-cp', (sourceSets.main.runtimeClasspath + project(':jatot-logging').sourceSets.main.runtimeClasspath).asPath, '--save-java'
+    args 'compile', "${rootDirDir}/jatot-compiler/src/e2e/examples/LoggingDemo.jatot", '-d', "${buildDirDir}/classes/java/demo", '-cp', sourceSets.main.runtimeClasspath.asPath, '--save-java'
     
-    dependsOn tasks.named('classes'), project(':jatot-logging').tasks.named('classes')
+    dependsOn tasks.named('classes')
 }
 
 tasks.register('runLoggingDemo', JavaExec) {
     group = 'verification'
     description = 'Runs the standalone Logging demo application.'
-    classpath = files("${buildDirDir}/classes/java/demo") + sourceSets.main.runtimeClasspath + project(':jatot-logging').sourceSets.main.runtimeClasspath
+    classpath = files("${buildDirDir}/classes/java/demo") + sourceSets.main.runtimeClasspath
     mainClass = 'demo.LoggingDemo'
     dependsOn tasks.named('compileLoggingDemo')
 }

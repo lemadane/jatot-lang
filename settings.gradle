@@ -1,10 +1,5 @@
 rootProject.name = 'jatot-native-html'
 
-include 'jatot-html-runtime'
-project(':jatot-html-runtime').projectDir = new File(settingsDir, 'jatot-compiler/src/e2e/jatot-html-runtime')
-
-include 'jatot-html-spring'
-project(':jatot-html-spring').projectDir = new File(settingsDir, 'jatot-compiler/src/e2e/jatot-html-spring')
 
 include 'jatot-compiler'
 
@@ -14,7 +9,4 @@ project(':jatot-html-demo-routing').projectDir = new File(settingsDir, 'jatot-co
 include 'jatot-html-demo-sql'
 project(':jatot-html-demo-sql').projectDir = new File(settingsDir, 'jatot-compiler/src/e2e/jatot-html-demo-sql')
 
-include 'jatot-logging'
-include 'jatot-logging-spring-boot-starter'
-
-include 'jatot-json'
+include 'jatot-spring-boot-starter'

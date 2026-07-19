@@ -24,7 +24,7 @@ public class SlugCompatibilityTest {
     @Test
     public void testJavaUsageOfSlugClass() {
         // Pure Java usage of the new standard library feature
-        jatot.web.Slug s = jatot.web.Slug.from("Aircon Cleaning");
+        io.jatot.web.Slug s = io.jatot.web.Slug.from("Aircon Cleaning");
         assertEquals("aircon-cleaning", s.value());
     }
 }

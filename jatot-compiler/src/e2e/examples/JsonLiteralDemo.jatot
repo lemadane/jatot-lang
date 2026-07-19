@@ -1,5 +1,5 @@
-import jatot.json.Json;
-import jatot.json.JsonOptions;
+import io.jatot.json.Json;
+import io.jatot.json.JsonOptions;
 
 public class JsonLiteralDemo {
     public static void main(String[] args) {

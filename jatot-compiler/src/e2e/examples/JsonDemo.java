@@ -1,8 +1,8 @@
 
 
-import jatot.json.Json;
-import jatot.json.JsonOptions;
-import jatot.json.JsonName;
+import io.jatot.json.Json;
+import io.jatot.json.JsonOptions;
+import io.jatot.json.JsonName;
 import java.util.UUID;
 import java.util.List;
 import java.time.LocalDate;

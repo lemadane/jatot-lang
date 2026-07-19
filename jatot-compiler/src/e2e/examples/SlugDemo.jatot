@@ -1,8 +1,8 @@
 package demo;
 
-import jatot.web.Slug;
-import jatot.web.SlugOptions;
-import jatot.web.SlugCharacterPolicy;
+import io.jatot.web.Slug;
+import io.jatot.web.SlugOptions;
+import io.jatot.web.SlugCharacterPolicy;
 
 public class SlugDemo {
     public static void main(String[] args) {

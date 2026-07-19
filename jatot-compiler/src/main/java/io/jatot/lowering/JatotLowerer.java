@@ -84,22 +84,22 @@ public final class JatotLowerer implements ImportResolver {
 
     private boolean hasLoggingAnnotation(List<String> modifiers) {
         if (modifiers == null) return false;
-        if (modifiers.contains("@jatot.logging.Logging")) {
+        if (modifiers.contains("@io.jatot.logging.Logging")) {
             return true;
         }
         if (modifiers.contains("@Logging")) {
             if (currentUnit == null) return false;
-            return currentUnit.imports().contains("jatot.logging.Logging") || currentUnit.imports().contains("jatot.logging.*");
+            return currentUnit.imports().contains("io.jatot.logging.Logging") || currentUnit.imports().contains("io.jatot.logging.*");
         }
         return false;
     }
 
     private void injectLoggerField(List<String> modifiers, List<Member> members, String className) {
         if (hasLoggingAnnotation(modifiers)) {
-            TypeNode type = new BaseTypeNode("jatot.logging.Logger", List.of(), true);
+            TypeNode type = new BaseTypeNode("io.jatot.logging.Logger", List.of(), true);
             Expression classRef = new IdentifierExpr(className, null);
             Expression classDotClass = new MemberAccessExpr(classRef, "class", false, null);
-            Expression logManager = new IdentifierExpr("jatot.logging.LogManager", null);
+            Expression logManager = new IdentifierExpr("io.jatot.logging.LogManager", null);
             Expression getLogger = new MethodCallExpr(logManager, "getLogger", List.of(), List.of(classDotClass), false, null);
             FieldDecl logField = new FieldDecl(List.of("private", "static", "final"), type, "log", Optional.of(getLogger));
             members.add(logField);

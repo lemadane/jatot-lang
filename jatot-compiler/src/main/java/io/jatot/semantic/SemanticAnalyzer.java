@@ -118,12 +118,12 @@ public final class SemanticAnalyzer implements ImportResolver {
 
     private boolean hasLoggingAnnotation(List<String> modifiers) {
         if (modifiers == null) return false;
-        if (modifiers.contains("@jatot.logging.Logging")) {
+        if (modifiers.contains("@io.jatot.logging.Logging")) {
             return true;
         }
         if (modifiers.contains("@Logging")) {
             if (currentUnit == null) return false;
-            return currentUnit.imports().contains("jatot.logging.Logging") || currentUnit.imports().contains("jatot.logging.*");
+            return currentUnit.imports().contains("io.jatot.logging.Logging") || currentUnit.imports().contains("io.jatot.logging.*");
         }
         return false;
     }
@@ -133,7 +133,7 @@ public final class SemanticAnalyzer implements ImportResolver {
             if (members.stream().anyMatch(m -> m instanceof FieldDecl fd && fd.name().equals("log"))) {
                 error(errorToken, "Cannot generate logging field 'log' because the type already declares a field named 'log'.");
             }
-            TypeInfo loggerInfo = symbolTable.getType("jatot.logging.Logger");
+            TypeInfo loggerInfo = symbolTable.getType("io.jatot.logging.Logger");
             if (loggerInfo == null) {
                 BaseTypeNode voidType = new BaseTypeNode("void", List.of(), false);
                 BaseTypeNode stringType = new BaseTypeNode("java.lang.String", List.of(), false);
@@ -153,7 +153,7 @@ public final class SemanticAnalyzer implements ImportResolver {
                 SymbolTable.MethodInfo errorErrMethod = new SymbolTable.MethodInfo("error", List.of("public"), voidType, List.of(strParam, errParam));
                 
                 loggerInfo = new TypeInfo(
-                    "jatot.logging.Logger", false, false, false, false, Optional.empty(), List.of(),
+                    "io.jatot.logging.Logger", false, false, false, false, Optional.empty(), List.of(),
                     List.of(
                         traceMethod, traceErrMethod,
                         debugMethod, debugErrMethod,
